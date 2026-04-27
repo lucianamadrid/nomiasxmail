@@ -100,10 +100,56 @@
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { font-weight: 500; text-align: left; padding: 4px 8px; color: var(--muted); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-  td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
+  tr.excluded td { opacity: 0.35; }
+  tr.excluded .exclude-btn { opacity: 1; }
 
   .num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); color: var(--muted); font-size: 11px; font-weight: 600; border: 1px solid var(--border); }
+
+  /* Exclude button */
+  .exclude-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.12s;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .exclude-btn:hover {
+    background: var(--danger-light);
+    border-color: #FECACA;
+    color: var(--danger);
+  }
+  .exclude-btn.excluded {
+    background: var(--danger-light);
+    border-color: #FECACA;
+    color: var(--danger);
+  }
+  .exclude-btn.excluded:hover {
+    background: var(--bg);
+    border-color: var(--border);
+    color: var(--muted);
+  }
+
+  .excluded-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--danger);
+    background: var(--danger-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+  }
 
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
@@ -137,6 +183,7 @@
   .progress-item .pname { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .st { font-size: 12px; font-weight: 500; }
   .st-pending { color: #C4B9AF; }
+  .st-skip { color: var(--muted); font-style: italic; }
   .st-proc { color: var(--info); }
   .st-ok { color: var(--accent); }
   .st-err { color: var(--danger); }
@@ -154,6 +201,17 @@
     overflow-y: auto;
     white-space: pre-wrap;
     line-height: 1.6;
+  }
+
+  .table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
   }
 </style>
 </head>
@@ -189,9 +247,13 @@
   <div class="card">
     <div class="card-label">Paso 3 — Destinatarios</div>
     <table>
-      <thead><tr><th>#</th><th>Nombre</th><th>Email</th></tr></thead>
+      <thead><tr><th>#</th><th>Nombre</th><th>Email</th><th style="text-align:center">Excluir</th></tr></thead>
       <tbody id="recTbody"></tbody>
     </table>
+    <div class="table-footer">
+      <span id="activeCount"></span>
+      <button class="btn" style="font-size:12px;padding:5px 10px" onclick="resetExclusions()">Restablecer todos</button>
+    </div>
   </div>
 
   <!-- Paso 4 -->
@@ -204,7 +266,7 @@
   <!-- Paso 5 -->
   <div class="card">
     <div class="card-label">Paso 5 — Crear borradores</div>
-    <button class="btn btn-primary" id="runBtn" onclick="runAll()" disabled>Crear 10 borradores en Gmail</button>
+    <button class="btn btn-primary" id="runBtn" onclick="runAll()" disabled>Crear borradores en Gmail</button>
     <div id="progressList" style="margin-top:12px"></div>
     <div id="log"></div>
   </div>
@@ -233,6 +295,8 @@ const RECIPIENTS = [
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
 let pdfFile = null, accessToken = null, docBaseName = "";
+// Track excluded indices
+let excluded = new Set();
 
 function getPrevMonth() {
   const now = new Date();
@@ -262,13 +326,73 @@ function getSubject() {
   return `Nomina, ${document.getElementById('monthSel').value} ${new Date().getFullYear()}`;
 }
 
+function updateActiveCount() {
+  const active = RECIPIENTS.length - excluded.size;
+  document.getElementById('activeCount').textContent =
+    `${active} de ${RECIPIENTS.length} destinatarios activos`;
+  // Update run button label
+  const btn = document.getElementById('runBtn');
+  if (!btn.disabled || pdfFile && accessToken) {
+    btn.textContent = `Crear ${active} borrador${active !== 1 ? 'es' : ''} en Gmail`;
+  }
+}
+
+function toggleExclude(i) {
+  const row = document.getElementById(`row_${i}`);
+  const btn = document.getElementById(`excl_${i}`);
+  if (excluded.has(i)) {
+    excluded.delete(i);
+    row.classList.remove('excluded');
+    btn.classList.remove('excluded');
+    btn.title = 'Excluir destinatario';
+    btn.textContent = '✕';
+  } else {
+    excluded.add(i);
+    row.classList.add('excluded');
+    btn.classList.add('excluded');
+    btn.title = 'Incluir destinatario';
+    btn.textContent = '↩';
+  }
+  updateActiveCount();
+  updateRunBtn();
+}
+
+function resetExclusions() {
+  excluded.clear();
+  RECIPIENTS.forEach((_, i) => {
+    const row = document.getElementById(`row_${i}`);
+    const btn = document.getElementById(`excl_${i}`);
+    row.classList.remove('excluded');
+    btn.classList.remove('excluded');
+    btn.title = 'Excluir destinatario';
+    btn.textContent = '✕';
+  });
+  updateActiveCount();
+  updateRunBtn();
+}
+
 function buildTable() {
   const tb = document.getElementById('recTbody');
   RECIPIENTS.forEach((r, i) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td><span class="num">${i+1}</span></td><td>${r.name}</td><td style="color:var(--muted);font-size:12px">${r.email}</td>`;
+    tr.id = `row_${i}`;
+    tr.innerHTML = `
+      <td><span class="num">${i+1}</span></td>
+      <td>${r.name}</td>
+      <td style="color:var(--muted);font-size:12px">${r.email}</td>
+      <td style="text-align:center">
+        <button class="exclude-btn" id="excl_${i}" title="Excluir destinatario" onclick="toggleExclude(${i})">✕</button>
+      </td>`;
     tb.appendChild(tr);
   });
+  updateActiveCount();
+}
+
+function updateRunBtn() {
+  const active = RECIPIENTS.length - excluded.size;
+  const btn = document.getElementById('runBtn');
+  btn.disabled = !(pdfFile && accessToken) || active === 0;
+  btn.textContent = `Crear ${active} borrador${active !== 1 ? 'es' : ''} en Gmail`;
 }
 
 window.addEventListener('load', () => {
@@ -287,11 +411,11 @@ function handleFile(f) {
   docBaseName = f.name.replace(/\.pdf$/i, '');
   document.getElementById('fileName').textContent = `✓ ${f.name}  (${(f.size/1024).toFixed(0)} KB)`;
   dz.classList.add('has-file');
-  checkReady();
+  updateRunBtn();
 }
 
 function checkReady() {
-  document.getElementById('runBtn').disabled = !(pdfFile && accessToken);
+  updateRunBtn();
 }
 
 function log(msg) {
@@ -328,7 +452,7 @@ function checkOAuthCallback() {
     st.className = 'auth-status ok';
     document.getElementById('authBtn').textContent = 'Reconectar Gmail';
     window.history.replaceState({}, '', window.location.pathname);
-    checkReady();
+    updateRunBtn();
   }
 }
 
@@ -396,7 +520,8 @@ function buildProgress() {
   RECIPIENTS.forEach((r, i) => {
     const d = document.createElement('div');
     d.className = 'progress-item';
-    d.innerHTML = `<span class="num">${i+1}</span><span class="pname">${r.name} — ${r.email}</span><span class="st st-pending" id="st_${i}">pendiente</span>`;
+    const isExcluded = excluded.has(i);
+    d.innerHTML = `<span class="num">${i+1}</span><span class="pname">${r.name} — ${r.email}</span><span class="st ${isExcluded ? 'st-skip' : 'st-pending'}" id="st_${i}">${isExcluded ? 'omitido' : 'pendiente'}</span>`;
     el.appendChild(d);
   });
 }
@@ -415,6 +540,12 @@ async function runAll() {
   const limit = Math.min(pages.length, RECIPIENTS.length);
 
   for (let i = 0; i < limit; i++) {
+    // Skip excluded recipients
+    if (excluded.has(i)) {
+      log(`— ${RECIPIENTS[i].name}: omitido`);
+      continue;
+    }
+
     const r = RECIPIENTS[i];
     const st = document.getElementById(`st_${i}`);
     st.textContent = 'procesando...'; st.className = 'st st-proc';
