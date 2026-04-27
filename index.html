@@ -306,7 +306,7 @@ function startAuth() {
   sessionStorage.setItem('oauth_state', state);
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: window.location.origin + window.location.pathname,
+    redirect_uri: 'https://lucianamadrid.github.io/nomiasxmail/',
     response_type: 'token',
     scope: SCOPES,
     state,
@@ -361,6 +361,7 @@ function buildMime({ to, subject, attachName, b64 }) {
   const subj = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
   const raw = [
     `MIME-Version: 1.0`,
+    `From: info@buenasysantas.es`,
     `To: ${to}`,
     `Subject: ${subj}`,
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
