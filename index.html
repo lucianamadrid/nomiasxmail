@@ -181,8 +181,7 @@
     padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px;
   }
   .scan-row:last-child { border-bottom: none; }
-  .scan-name { flex: 1; font-weight: 500; }
-  .scan-detected { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scan-detected { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge {
     font-size: 11px; font-weight: 500; padding: 2px 7px;
     border-radius: 4px; white-space: nowrap;
@@ -261,8 +260,9 @@
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h3 id="modalTitle">No se reconoció el nombre</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:6px">Texto detectado arriba a la derecha:</p>
     <div class="detected" id="modalDetected"></div>
-    <p>Texto detectado arriba a la derecha. ¿A quién corresponde esta nómina?</p>
+    <p>¿A quién corresponde esta nómina?</p>
     <select id="modalSelect"></select>
     <div class="modal-actions">
       <button class="btn btn-sm" onclick="modalSkip()">Omitir página</button>
@@ -277,25 +277,27 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 const CLIENT_ID = '415833847121-nj0574on34u1e1ffhnl7imd7mp25mfd9.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/gmail.compose';
 
-// NOTE: Update surnames below to match what actually appears in your PDFs
+// pdfName: el texto exacto que aparece en la nómina (APELLIDO APELLIDO, NOMBRE)
+// name: nombre visible en la app
+// email: destinatario
 const RECIPIENTS = [
-  { name: "Jennifer", surname: "Alvarez",         email: "jennialvaari@gmail.com" },
-  { name: "Jessica",  surname: "Arribascaravaca", email: "Jessicaarribascaravaca@gmail.com" },
-  { name: "Luciana",  surname: "Fisbein",          email: "lfisbein@gmail.com" },
-  { name: "Yamila",   surname: "Fisbein",          email: "yamilafisbein@gmail.com" },
-  { name: "Ramiro",   surname: "Ramiro",           email: "ramiro2875@hotmail.com" },
-  { name: "Ana",      surname: "Pacifico",         email: "pacificarocha79@gmail.com" },
-  { name: "Julio",    surname: "Julio",            email: "jul-ius@hotmail.com" },
-  { name: "Shenay",   surname: "Shenay",           email: "didilina0512@gmail.com" },
-  { name: "Mary",     surname: "Nunez",            email: "marialuznunezfuentes@gmail.com" },
-  { name: "Richard",  surname: "Silva",            email: "richardsilvavera@gmail.com" }
+  { pdfName: "ALVAREZ ARIAS, JENNIFER",        name: "Jennifer", email: "jennialvaari@gmail.com" },
+  { pdfName: "ARRIBAS CARAVACA, JESSICA",      name: "Jessica",  email: "Jessicaarribascaravaca@gmail.com" },
+  { pdfName: "FISBEIN EFRON, LUCIANA",         name: "Luciana",  email: "lfisbein@gmail.com" },
+  { pdfName: "FISBEIN EFRON, YAMILA",          name: "Yamila",   email: "yamilafisbein@gmail.com" },
+  { pdfName: "MARTINEZ CHAPPERO, RAMIRO",      name: "Ramiro",   email: "ramiro2875@hotmail.com" },
+  { pdfName: "MIRANDA ROCHA, ANA",             name: "Ana",      email: "pacificarocha79@gmail.com" },
+  { pdfName: "MORALES ROMERO, JULIO",          name: "Julio",    email: "jul-ius@hotmail.com" },
+  { pdfName: "NAZIMOVA CHOLAKOVA, SHENAY",     name: "Shenay",   email: "didilina0512@gmail.com" },
+  { pdfName: "NUÑEZ FUENTES, MARIA",           name: "Mary",     email: "marialuznunezfuentes@gmail.com" },
+  { pdfName: "SILVA VERA, RICHARD",            name: "Richard",  email: "richardsilvavera@gmail.com" }
 ];
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
 let pdfFile = null, accessToken = null, docBaseName = "";
 let excluded = new Set();
-let pageAssignments = null; // [{pageIndex, recipientIndex, detectedText, b64}]
+let pageAssignments = null;
 
 // ── Month select ──────────────────────────────────────────────
 function getPrevMonth() {
@@ -428,34 +430,52 @@ function checkOAuthCallback() {
 
 // ── Name matching ─────────────────────────────────────────────
 function normalize(s) {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
 }
 
 function findRecipient(detectedText) {
-  const words = normalize(detectedText).split(/\s+/).filter(w => w.length >= 3);
+  const det = normalize(detectedText);
+
+  // Strategy 1: direct substring match against known pdfName
+  for (let i = 0; i < RECIPIENTS.length; i++) {
+    const known = normalize(RECIPIENTS[i].pdfName);
+    // Check if the first surname word appears in the detected text
+    const firstWord = known.split(/[\s,]+/)[0];
+    if (firstWord.length >= 3 && det.includes(firstWord)) {
+      // Also verify at least one more word matches
+      const knownWords = known.split(/[\s,]+/).filter(w => w.length >= 3);
+      const matches = knownWords.filter(w => det.includes(w));
+      if (matches.length >= 2) return i;
+    }
+  }
+
+  // Strategy 2: score-based word matching
+  const detWords = det.split(/[\s,]+/).filter(w => w.length >= 3);
   let bestIdx = -1, bestScore = 0;
   RECIPIENTS.forEach((r, i) => {
-    const rName = normalize(r.name);
-    const rSurname = normalize(r.surname);
+    const knownWords = normalize(r.pdfName).split(/[\s,]+/).filter(w => w.length >= 3);
     let score = 0;
-    words.forEach(w => {
-      if (rSurname && (rSurname.includes(w) || w.includes(rSurname))) score += 2;
-      if (rName && (rName.includes(w) || w.includes(rName))) score += 1;
+    detWords.forEach(dw => {
+      knownWords.forEach(kw => {
+        if (dw === kw) score += 3;
+        else if (dw.includes(kw) || kw.includes(dw)) score += 1;
+      });
     });
     if (score > bestScore) { bestScore = score; bestIdx = i; }
   });
-  // Require at least a surname match (score >= 2)
-  return bestScore >= 2 ? bestIdx : -1;
+
+  return bestScore >= 3 ? bestIdx : -1;
 }
 
-// ── PDF text extraction (top-right zone) ─────────────────────
+// ── PDF text extraction ───────────────────────────────────────
 async function extractTopRightText(page) {
   const vp = page.getViewport({ scale: 1 });
   const textContent = await page.getTextContent();
 
-  // Top 25% height, right 50% width
-  const xMin = vp.width * 0.50;
-  const yMin = vp.height * 0.75; // PDF y=0 is at bottom, so top rows have high y
+  // Top 20% of page height, right 40% of width
+  // PDF coordinate system: y=0 at bottom, so "top" = high y values
+  const xMin = vp.width * 0.45;
+  const yMin = vp.height * 0.78;
 
   const items = textContent.items.filter(item => {
     const tx = item.transform[4];
@@ -463,7 +483,7 @@ async function extractTopRightText(page) {
     return tx >= xMin && ty >= yMin;
   });
 
-  // Sort: top rows first (desc y), then left to right
+  // Sort top-to-bottom (desc y), left-to-right
   items.sort((a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4]);
 
   return items.map(i => i.str).join(' ').replace(/\s+/g, ' ').trim();
@@ -490,15 +510,14 @@ function showModal(pageNum, detectedText) {
   return new Promise(resolve => {
     modalResolve = resolve;
     document.getElementById('modalTitle').textContent = `Página ${pageNum} — nombre no reconocido`;
-    document.getElementById('modalDetected').textContent =
-      detectedText || '(sin texto detectado en esa zona)';
+    document.getElementById('modalDetected').textContent = detectedText || '(sin texto en esa zona)';
 
     const sel = document.getElementById('modalSelect');
     sel.innerHTML = '';
     RECIPIENTS.forEach((r, i) => {
       const opt = document.createElement('option');
       opt.value = i;
-      opt.textContent = `${r.name} — ${r.email}`;
+      opt.textContent = `${r.name} (${r.pdfName})`;
       sel.appendChild(opt);
     });
 
@@ -517,7 +536,7 @@ function modalSkip() {
   if (modalResolve) { modalResolve({ action: 'skip' }); modalResolve = null; }
 }
 
-// ── Scan ─────────────────────────────────────────────────────
+// ── Main scan ─────────────────────────────────────────────────
 async function scanPdf() {
   if (!pdfFile) return;
   const scanBtn = document.getElementById('scanBtn');
@@ -536,7 +555,7 @@ async function scanPdf() {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const detectedText = await extractTopRightText(page);
-    const recipientIdx = findRecipient(detectedText);
+    let recipientIdx = findRecipient(detectedText);
     const b64 = await renderPageToB64(page);
 
     let assignment;
@@ -545,8 +564,7 @@ async function scanPdf() {
       assignment = { pageIndex: i, recipientIndex: recipientIdx, detectedText, b64 };
       addScanRow(resultsEl, i, detectedText, RECIPIENTS[recipientIdx].name, 'ok');
     } else {
-      // Show placeholder row, then open modal
-      addScanRow(resultsEl, i, detectedText, '…', 'warn');
+      addScanRow(resultsEl, i, detectedText, '?', 'warn');
       const result = await showModal(i, detectedText);
       if (result.action === 'assign') {
         assignment = { pageIndex: i, recipientIndex: result.idx, detectedText, b64 };
@@ -563,10 +581,9 @@ async function scanPdf() {
   scanBtn.disabled = false;
   scanBtn.textContent = 'Re-escanear PDF';
 
-  const hasValid = pageAssignments.some(a => a.recipientIndex !== -1 && !excluded.has(a.recipientIndex));
   const count = pageAssignments.filter(a => a.recipientIndex !== -1 && !excluded.has(a.recipientIndex)).length;
   const runBtn = document.getElementById('runBtn');
-  runBtn.disabled = !(hasValid && accessToken);
+  runBtn.disabled = !(count > 0 && accessToken);
   runBtn.textContent = `Crear ${count} borrador${count !== 1 ? 'es' : ''} en Gmail`;
 }
 
@@ -574,11 +591,10 @@ function addScanRow(container, pageNum, detectedText, resolvedName, status) {
   const div = document.createElement('div');
   div.className = 'scan-row';
   div.id = `scanrow_${pageNum}`;
-  const badgeClass = status === 'ok' ? 'badge-ok' : status === 'warn' ? 'badge-warn' : 'badge-skip';
+  const badgeClass = { ok: 'badge-ok', warn: 'badge-warn', skip: 'badge-skip' }[status];
   div.innerHTML = `
     <span class="num" style="flex-shrink:0">${pageNum}</span>
-    <span class="scan-name">Pág. ${pageNum}</span>
-    <span class="scan-detected" title="${detectedText}">${detectedText.slice(0, 35) || '—'}</span>
+    <span class="scan-detected" title="${detectedText}">${detectedText.slice(0, 45) || '—'}</span>
     <span class="badge ${badgeClass}" id="scanbadge_${pageNum}">${resolvedName}</span>`;
   container.appendChild(div);
 }
@@ -587,10 +603,10 @@ function updateScanRow(pageNum, resolvedName, status) {
   const badge = document.getElementById(`scanbadge_${pageNum}`);
   if (!badge) return;
   badge.textContent = resolvedName;
-  badge.className = `badge ${status === 'ok' ? 'badge-ok' : 'badge-skip'}`;
+  badge.className = `badge ${{ ok: 'badge-ok', skip: 'badge-skip' }[status]}`;
 }
 
-// ── Gmail ─────────────────────────────────────────────────────
+// ── Gmail draft creation ──────────────────────────────────────
 function buildMime({ to, subject, attachName, b64 }) {
   const boundary = 'b_' + Math.random().toString(36).slice(2);
   const subj = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
