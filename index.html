@@ -83,7 +83,13 @@
   </div>
 
   <div class="card">
-    <div class="card-label">Paso 1 — Mes de la nómina</div>
+    <div class="card-label">Paso 1 — Autorización Gmail</div>
+    <button class="btn" id="authBtn" onclick="startAuth()">Conectar con Gmail ↗</button>
+    <div class="auth-status" id="authStatus">Hacé clic para autorizar con tu cuenta de Google.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Paso 2 — Mes de la nómina</div>
     <div class="month-row">
       <select id="monthSel"></select>
       <div class="subject-preview" id="subjectPreview"></div>
@@ -91,7 +97,7 @@
   </div>
 
   <div class="card">
-    <div class="card-label">Paso 2 — PDF de nóminas</div>
+    <div class="card-label">Paso 3 — PDF de nóminas</div>
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
       <div class="icon">📄</div>
       <p>Hacé clic o arrastrá el PDF acá</p>
@@ -101,7 +107,7 @@
   </div>
 
   <div class="card">
-    <div class="card-label">Paso 3 — Destinatarios</div>
+    <div class="card-label">Paso 4 — Destinatarios</div>
     <table>
       <thead><tr><th>#</th><th>Nombre</th><th>Email</th><th style="text-align:center">Excluir</th></tr></thead>
       <tbody id="recTbody"></tbody>
@@ -110,12 +116,6 @@
       <span id="activeCount"></span>
       <button class="btn btn-sm" onclick="resetExclusions()">Restablecer todos</button>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="card-label">Paso 4 — Autorización Gmail</div>
-    <button class="btn" id="authBtn" onclick="startAuth()">Conectar con Gmail ↗</button>
-    <div class="auth-status" id="authStatus">Hacé clic para autorizar con tu cuenta de Google.</div>
   </div>
 
   <div class="card">
