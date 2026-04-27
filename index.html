@@ -7,42 +7,132 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
   :root {
-    --bg: #F5F3EF; --card: #FFFFFF; --border: #E2DDD6;
-    --text: #1A1714; --muted: #7A7470; --accent: #2E6B3E;
-    --accent-light: #EAF2EC; --danger: #9B2C2C; --info: #1D4ED8;
-    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --bg: #F5F3EF;
+    --card: #FFFFFF;
+    --border: #E2DDD6;
+    --text: #1A1714;
+    --muted: #7A7470;
+    --accent: #2E6B3E;
+    --accent-light: #EAF2EC;
+    --danger: #9B2C2C;
+    --danger-light: #FEF2F2;
+    --info: #1D4ED8;
+    --info-light: #EFF6FF;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
   .container { max-width: 640px; margin: 0 auto; }
+
   .header { margin-bottom: 2rem; }
   .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
   .header p { font-size: 14px; color: var(--muted); margin-top: 4px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 12px; box-shadow: var(--shadow); }
-  .card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
   .month-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  select { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; outline: none; }
+
+  select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    outline: none;
+  }
   select:focus { border-color: var(--accent); }
-  .subject-preview { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); background: var(--bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); }
-  .drop-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; cursor: pointer; transition: all 0.15s; }
-  .drop-zone:hover { border-color: var(--accent); background: var(--accent-light); }
+
+  .subject-preview {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-light); }
   .drop-zone.has-file { border-color: var(--accent); border-style: solid; background: var(--accent-light); }
   .drop-zone input { display: none; }
   .drop-zone .icon { font-size: 32px; margin-bottom: 8px; }
   .drop-zone p { font-size: 14px; color: var(--muted); }
   .drop-zone .file-name { font-size: 14px; color: var(--accent); font-weight: 500; margin-top: 4px; }
+
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { font-weight: 500; text-align: left; padding: 4px 8px; color: var(--muted); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
   td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
+
   .num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); color: var(--muted); font-size: 11px; font-weight: 600; border: 1px solid var(--border); }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; color: var(--text); transition: all 0.12s; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 500;
+    cursor: pointer; color: var(--text);
+    transition: all 0.12s;
+  }
   .btn:hover { background: var(--bg); }
-  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+
+  .btn-primary {
+    background: var(--accent); color: white;
+    border-color: var(--accent);
+  }
   .btn-primary:hover { background: #235530; border-color: #235530; }
   .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-  .progress-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+
+  .auth-status { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .auth-status.ok { color: var(--accent); }
+
+  .progress-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
   .progress-item:last-child { border-bottom: none; }
   .progress-item .pname { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .st { font-size: 12px; font-weight: 500; }
@@ -50,8 +140,21 @@
   .st-proc { color: var(--info); }
   .st-ok { color: var(--accent); }
   .st-err { color: var(--danger); }
-  #log { display: none; margin-top: 12px; background: #1A1714; color: #A8B8A0; font-family: 'DM Mono', monospace; font-size: 12px; padding: 12px; border-radius: 8px; max-height: 160px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
-  .info-box { background: var(--accent-light); border: 1px solid #B7D9BE; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #1F5C2E; }
+
+  #log {
+    display: none;
+    margin-top: 12px;
+    background: #1A1714;
+    color: #A8B8A0;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    max-height: 160px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    line-height: 1.6;
+  }
 </style>
 </head>
 <body>
@@ -62,6 +165,7 @@
     <p>Separador de PDF y creador de borradores automático</p>
   </div>
 
+  <!-- Paso 1 -->
   <div class="card">
     <div class="card-label">Paso 1 — Mes de la nómina</div>
     <div class="month-row">
@@ -70,6 +174,7 @@
     </div>
   </div>
 
+  <!-- Paso 2 -->
   <div class="card">
     <div class="card-label">Paso 2 — PDF de nómina (10 páginas)</div>
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileIn').click()">
@@ -80,6 +185,7 @@
     </div>
   </div>
 
+  <!-- Paso 3 -->
   <div class="card">
     <div class="card-label">Paso 3 — Destinatarios</div>
     <table>
@@ -88,208 +194,244 @@
     </table>
   </div>
 
+  <!-- Paso 4 -->
   <div class="card">
-    <div class="card-label">Paso 4 — Crear borradores</div>
-    <div class="info-box" style="margin-bottom:12px">
-      ✓ Sin autorización manual — los borradores se crean directamente en Gmail desde <strong>info@buenasysantas.es</strong>
-    </div>
+    <div class="card-label">Paso 4 — Autorización Gmail</div>
+    <button class="btn" id="authBtn" onclick="startAuth()">Conectar con Gmail ↗</button>
+    <div class="auth-status" id="authStatus">Hacé clic para autorizar con tu cuenta de Google.</div>
+  </div>
+
+  <!-- Paso 5 -->
+  <div class="card">
+    <div class="card-label">Paso 5 — Crear borradores</div>
     <button class="btn btn-primary" id="runBtn" onclick="runAll()" disabled>Crear 10 borradores en Gmail</button>
     <div id="progressList" style="margin-top:12px"></div>
     <div id="log"></div>
   </div>
 
 </div>
+
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwf6-q915NPulZIbwyU-5G742rLoZkauk0Poim6F-eISBjmhcgW35YEdp4TT5-1kDkVxQ/exec';
+const CLIENT_ID = '415833847121-nj0574on34u1e1ffhnl7imd7mp25mfd9.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/gmail.compose';
 
-var RECIPIENTS = [
-  { name: 'Jennifer', email: 'jennialvaari@gmail.com' },
-  { name: 'Jessica',  email: 'Jessicaarribascaravaca@gmail.com' },
-  { name: 'Luciana',  email: 'lfisbein@gmail.com' },
-  { name: 'Yamila',   email: 'yamilafisbein@gmail.com' },
-  { name: 'Ramiro',   email: 'ramiro2875@hotmail.com' },
-  { name: 'Ana',      email: 'pacificarocha79@gmail.com' },
-  { name: 'Julio',    email: 'jul-ius@hotmail.com' },
-  { name: 'Shenay',   email: 'didilina0512@gmail.com' },
-  { name: 'Mary',     email: 'marialuznunezfuentes@gmail.com' },
-  { name: 'Richard',  email: 'richardsilvavera@gmail.com' }
+const RECIPIENTS = [
+  { name: "Jennifer", email: "jennialvaari@gmail.com" },
+  { name: "Jessica",  email: "Jessicaarribascaravaca@gmail.com" },
+  { name: "Luciana",  email: "lfisbein@gmail.com" },
+  { name: "Yamila",   email: "yamilafisbein@gmail.com" },
+  { name: "Ramiro",   email: "ramiro2875@hotmail.com" },
+  { name: "Ana",      email: "pacificarocha79@gmail.com" },
+  { name: "Julio",    email: "jul-ius@hotmail.com" },
+  { name: "Shenay",   email: "didilina0512@gmail.com" },
+  { name: "Mary",     email: "marialuznunezfuentes@gmail.com" },
+  { name: "Richard",  email: "richardsilvavera@gmail.com" }
 ];
 
-var MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-var pdfFile = null, docBaseName = '';
+const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+let pdfFile = null, accessToken = null, docBaseName = "";
 
 function getPrevMonth() {
-  var now = new Date();
-  var prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  return MONTHS_ES[prev.getMonth()];
+  const now = new Date();
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return { month: MONTHS_ES[prev.getMonth()], year: prev.getFullYear() };
 }
 
 function buildMonthSelect() {
-  var sel = document.getElementById('monthSel');
-  MONTHS_ES.forEach(function(m) {
-    var opt = document.createElement('option');
-    opt.value = m;
-    opt.textContent = m.charAt(0).toUpperCase() + m.slice(1);
+  const sel = document.getElementById('monthSel');
+  MONTHS_ES.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m.charAt(0).toUpperCase() + m.slice(1);
     sel.appendChild(opt);
   });
-  sel.value = getPrevMonth();
+  sel.value = getPrevMonth().month;
   updatePreview();
   sel.addEventListener('change', updatePreview);
 }
 
 function updatePreview() {
-  var m = document.getElementById('monthSel').value;
-  var yr = new Date().getFullYear();
-  document.getElementById('subjectPreview').textContent = 'Asunto: Nomina, ' + m + ' ' + yr;
+  const m = document.getElementById('monthSel').value;
+  const yr = new Date().getFullYear();
+  document.getElementById('subjectPreview').textContent = `Asunto: Nomina, ${m} ${yr}`;
 }
 
 function getSubject() {
-  var m = document.getElementById('monthSel').value;
-  return 'Nomina, ' + m + ' ' + new Date().getFullYear();
+  return `Nomina, ${document.getElementById('monthSel').value} ${new Date().getFullYear()}`;
 }
 
 function buildTable() {
-  var tb = document.getElementById('recTbody');
-  RECIPIENTS.forEach(function(r, i) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = '<td><span class="num">' + (i+1) + '</span></td><td>' + r.name + '</td><td style="color:var(--muted);font-size:12px">' + r.email + '</td>';
+  const tb = document.getElementById('recTbody');
+  RECIPIENTS.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><span class="num">${i+1}</span></td><td>${r.name}</td><td style="color:var(--muted);font-size:12px">${r.email}</td>`;
     tb.appendChild(tr);
   });
 }
 
-window.addEventListener('load', function() {
-  buildMonthSelect();
-  buildTable();
+window.addEventListener('load', () => {
+  buildMonthSelect(); buildTable(); checkOAuthCallback();
 });
 
-var dz = document.getElementById('dropZone');
-dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.style.background = 'var(--accent-light)'; });
-dz.addEventListener('dragleave', function() { dz.style.background = ''; });
-dz.addEventListener('drop', function(e) { e.preventDefault(); dz.style.background = ''; handleFile(e.dataTransfer.files[0]); });
-document.getElementById('fileIn').addEventListener('change', function(e) { handleFile(e.target.files[0]); });
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+document.getElementById('fileIn').addEventListener('change', e => handleFile(e.target.files[0]));
 
 function handleFile(f) {
   if (!f || f.type !== 'application/pdf') return;
   pdfFile = f;
   docBaseName = f.name.replace(/\.pdf$/i, '');
-  document.getElementById('fileName').textContent = '✓ ' + f.name + '  (' + (f.size/1024).toFixed(0) + ' KB)';
+  document.getElementById('fileName').textContent = `✓ ${f.name}  (${(f.size/1024).toFixed(0)} KB)`;
   dz.classList.add('has-file');
-  document.getElementById('runBtn').disabled = false;
+  checkReady();
+}
+
+function checkReady() {
+  document.getElementById('runBtn').disabled = !(pdfFile && accessToken);
 }
 
 function log(msg) {
-  var el = document.getElementById('log');
+  const el = document.getElementById('log');
   el.style.display = 'block';
   el.textContent += msg + '\n';
   el.scrollTop = el.scrollHeight;
 }
 
+function startAuth() {
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: 'token',
+    scope: SCOPES,
+    state,
+    prompt: 'consent'
+  });
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+function checkOAuthCallback() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.slice(1));
+  const token = params.get('access_token');
+  const state = params.get('state');
+  if (token && state === sessionStorage.getItem('oauth_state')) {
+    accessToken = token;
+    const st = document.getElementById('authStatus');
+    st.textContent = '✓ Gmail conectado. Ya podés crear los borradores.';
+    st.className = 'auth-status ok';
+    document.getElementById('authBtn').textContent = 'Reconectar Gmail';
+    window.history.replaceState({}, '', window.location.pathname);
+    checkReady();
+  }
+}
+
 async function pdfToPages(file) {
-  var ab = await file.arrayBuffer();
-  var pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-  log('PDF cargado: ' + pdf.numPages + ' páginas.');
-  var pages = [];
-  for (var i = 1; i <= pdf.numPages; i++) {
-    var page = await pdf.getPage(i);
-    var vp = page.getViewport({ scale: 2 });
-    var canvas = document.createElement('canvas');
-    canvas.width = vp.width;
-    canvas.height = vp.height;
+  const ab = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+  log(`PDF cargado: ${pdf.numPages} páginas.`);
+  const pages = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const vp = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-    var blob = await new Promise(function(r) { canvas.toBlob(r, 'image/png'); });
-    var b64 = await new Promise(function(res, rej) {
-      var fr = new FileReader();
-      fr.onload = function() { res(fr.result.split(',')[1]); };
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    const b64 = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result.split(',')[1]);
       fr.onerror = rej;
       fr.readAsDataURL(blob);
     });
     pages.push(b64);
-    log('  Página ' + i + ' procesada.');
+    log(`  Página ${i} procesada.`);
   }
   return pages;
 }
 
+function buildMime({ to, subject, attachName, b64 }) {
+  const boundary = 'b_' + Math.random().toString(36).slice(2);
+  const subj = `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
+  const raw = [
+    `MIME-Version: 1.0`,
+    `To: ${to}`,
+    `Subject: ${subj}`,
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/plain; charset="UTF-8"`,
+    ``,
+    ``,
+    `--${boundary}`,
+    `Content-Type: image/png; name="${attachName}"`,
+    `Content-Transfer-Encoding: base64`,
+    `Content-Disposition: attachment; filename="${attachName}"`,
+    ``,
+    ...b64.match(/.{1,76}/g),
+    `--${boundary}--`
+  ].join('\r\n');
+  return btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function createDraft(raw) {
+  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: { raw } })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || res.status); }
+  return res.json();
+}
+
 function buildProgress() {
-  var el = document.getElementById('progressList');
+  const el = document.getElementById('progressList');
   el.innerHTML = '';
-  RECIPIENTS.forEach(function(r, i) {
-    var d = document.createElement('div');
+  RECIPIENTS.forEach((r, i) => {
+    const d = document.createElement('div');
     d.className = 'progress-item';
-    d.innerHTML = '<span class="num">' + (i+1) + '</span><span class="pname">' + r.name + ' — ' + r.email + '</span><span class="st st-pending" id="st_' + i + '">pendiente</span>';
+    d.innerHTML = `<span class="num">${i+1}</span><span class="pname">${r.name} — ${r.email}</span><span class="st st-pending" id="st_${i}">pendiente</span>`;
     el.appendChild(d);
   });
 }
 
 async function runAll() {
-  if (!pdfFile) return;
+  if (!pdfFile || !accessToken) return;
   document.getElementById('runBtn').disabled = true;
   document.getElementById('log').textContent = '';
   buildProgress();
 
-  var pages;
-  try {
-    pages = await pdfToPages(pdfFile);
-  } catch(e) {
-    log('Error al procesar PDF: ' + e.message);
-    document.getElementById('runBtn').disabled = false;
-    return;
-  }
+  let pages;
+  try { pages = await pdfToPages(pdfFile); }
+  catch(e) { log('Error al procesar PDF: ' + e.message); document.getElementById('runBtn').disabled = false; return; }
 
-  var subject = getSubject();
-  var limit = Math.min(pages.length, RECIPIENTS.length);
+  const subject = getSubject();
+  const limit = Math.min(pages.length, RECIPIENTS.length);
 
-  // Marcar todos como procesando
-  for (var i = 0; i < limit; i++) {
-    document.getElementById('st_' + i).textContent = 'en cola...';
-    document.getElementById('st_' + i).className = 'st st-proc';
-  }
-
-  log('Enviando al servidor...');
-
-  // Armar payload para el script
-  var recipients = [];
-  for (var i = 0; i < limit; i++) {
-    recipients.push({
-      email: RECIPIENTS[i].email,
-      attachName: docBaseName + ' ' + (i+1) + ' ' + RECIPIENTS[i].name + '.png'
-    });
-  }
-
-  try {
-    var res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({
-        subject: subject,
-        recipients: recipients,
-        pages: pages
-      })
-    });
-
-    var data = await res.json();
-
-    if (data.ok) {
-      for (var i = 0; i < limit; i++) {
-        var st = document.getElementById('st_' + i);
-        st.textContent = '✓ creado';
-        st.className = 'st st-ok';
-      }
-      log('\n¡Listo! ' + data.created + ' borradores creados en Gmail.');
-    } else {
-      throw new Error(data.error || 'Error desconocido');
+  for (let i = 0; i < limit; i++) {
+    const r = RECIPIENTS[i];
+    const st = document.getElementById(`st_${i}`);
+    st.textContent = 'procesando...'; st.className = 'st st-proc';
+    const attachName = `${docBaseName} ${i+1} ${r.name}.png`;
+    try {
+      const raw = buildMime({ to: r.email, subject, attachName, b64: pages[i] });
+      await createDraft(raw);
+      st.textContent = '✓ creado'; st.className = 'st st-ok';
+      log(`✓ ${r.name}: ${attachName}`);
+    } catch(e) {
+      st.textContent = '✗ error'; st.className = 'st st-err';
+      log(`✗ ${r.name}: ${e.message}`);
     }
-
-  } catch(e) {
-    log('✗ Error: ' + e.message);
-    for (var i = 0; i < limit; i++) {
-      var st = document.getElementById('st_' + i);
-      st.textContent = '✗ error';
-      st.className = 'st st-err';
-    }
+    await new Promise(r => setTimeout(r, 350));
   }
 
+  log('\n¡Listo! Revisá los borradores en Gmail.');
   document.getElementById('runBtn').disabled = false;
 }
 </script>
